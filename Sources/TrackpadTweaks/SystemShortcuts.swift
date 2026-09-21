@@ -1,12 +1,11 @@
 import AppKit
 import CoreGraphics
 
-/// Triggers macOS system actions by posting their *default* keyboard shortcuts.
+/// Triggers window-manager actions by posting keyboard shortcuts.
 /// Requires Accessibility permission (already needed for media keys).
 ///
-/// These send the factory defaults from System Settings → Keyboard → Shortcuts
-/// → Mission Control. If you've remapped those shortcuts, update `combo(for:)`
-/// below to match.
+/// Currently wired for OmniWM's bindings (see `combo(for:)`).
+/// If you change those bindings, update the combos below to match.
 enum SystemShortcuts {
     static func send(_ action: GestureAction) {
         guard let (keyCode, flags) = combo(for: action) else { return }
@@ -14,11 +13,12 @@ enum SystemShortcuts {
     }
 
     private static func combo(for action: GestureAction) -> (CGKeyCode, CGEventFlags)? {
+        let ctrlOpt: CGEventFlags = [.maskControl, .maskAlternate]
         switch action {
-        case .missionControl: return (126, .maskControl) // ^Up Arrow
-        case .appWindows: return (125, .maskControl)     // ^Down Arrow
-        case .spaceLeft: return (123, .maskControl)      // ^Left Arrow
-        case .spaceRight: return (124, .maskControl)     // ^Right Arrow
+        case .missionControl: return (49, ctrlOpt)  // ^⌥Space
+        case .appWindows: return (125, .maskControl) // ^Down Arrow (macOS default)
+        case .spaceLeft: return (126, ctrlOpt)       // ^⌥Up Arrow
+        case .spaceRight: return (125, ctrlOpt)      // ^⌥Down Arrow
         default: return nil
         }
     }

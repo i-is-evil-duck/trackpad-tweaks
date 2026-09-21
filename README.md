@@ -8,7 +8,7 @@ Default preset:
 - **4-finger swipe right → Next track**
 - 4-finger up → Mute, 3-finger up/down → Volume up/down, 3-finger left/right → Prev/Next
 
-Also available per gesture: **Mission Control**, **App Windows**, **Desktop Left**, **Desktop Right** (sent as the default `^↑ ^↓ ^← ^→` shortcuts — if you've remapped those in System Settings → Keyboard → Shortcuts, update `SystemShortcuts.swift` to match).
+Also available per gesture: **Mission Control** (`^⌥Space`), **App Windows** (`^↓`), **Desktop Left** (`^⌥↑`), **Desktop Right** (`^⌥↓`) — wired for OmniWM's bindings. If you change those bindings, update `combo(for:)` in `SystemShortcuts.swift` to match.
 
 > ⚠️ Mapping a gesture to Desktop Left/Right duplicates the macOS default for 3/4-finger horizontal swipes. Disable "Swipe between full-screen applications" in System Settings → Trackpad first, or both actions fire and the desktop appears not to move.
 
