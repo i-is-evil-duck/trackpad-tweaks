@@ -1,55 +1,59 @@
-# Trackpad Tweaks
+# Trackpad Tweaks  <br />  <img alt="Stargazers" src="https://img.shields.io/github/stars/i-is-evil-duck/trackpad-tweaks?style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41">
 
+
+## Trackpad Tweaks
 Lightweight macOS menu-bar app that remaps 4-finger trackpad swipes to media controls.
 
-Mappings (editable in Settings):
-- **4-finger swipe down → Play / Pause**
-- **4-finger swipe left → Previous track**
-- **4-finger swipe right → Next track**
-- **4-finger swipe up → Mute**
+## Downloads
 
-That's it — 4 gestures, 4 media actions, nothing else.
+Download the pre-built app from the [releases](https://github.com/i-is-evil-duck/trackpad-tweaks/releases) page.
 
-## How it works
+| Platform | File |
+|----------|------|
+| macOS | `TrackpadTweaks-1.0.2.zip` |
 
-- **Input:** raw trackpad frames from Apple's private `MultitouchSupport.framework` (the only way to get system-wide touch data). Frames with anything other than 4 fingers are ignored before any math happens, so normal scrolling costs one integer compare per frame.
-- **Recognition:** `GestureRecognizer` accumulates net centroid travel into a swipe in the dominant direction, with a movement threshold + cooldown debounce. No tap detection, no multi-count bookkeeping.
-- **Output:** media keys via `NSEvent.otherEvent(.systemDefined, subtype: 8)` with `NX_KEYTYPE_PLAY / NEXT / PREVIOUS / MUTE`. Requires **Accessibility** permission.
-
-AppKit-only (builds with just Command Line Tools), menu-bar (`LSUIElement`) app. Idle footprint is one status item + the multitouch callback thread; the settings window is built on demand and fully released on close. Settings persist to `~/Library/Application Support/TrackpadTweaks/bindings.json`.
-
-## Build & run
+## Build from Source
 
 ```bash
-./scripts/make-app.sh        # debug or: ./scripts/make-app.sh release
+# Clone the repo
+git clone https://github.com/i-is-evil-duck/trackpad-tweaks.git
+cd trackpad-tweaks
+
+# Build (requires Swift toolchain or Xcode Command Line Tools)
+./scripts/make-app.sh release
+```
+
+The app will be at `TrackpadTweaks.app`. Move it to `/Applications` for stable Launch at Login.
+
+## Setup
+
+Default mappings:
+
+- `swipe down`: Play / Pause
+- `swipe left`: Previous track
+- `swipe right`: Next track
+- `swipe up`: Mute
+
+On first launch, grant **Accessibility** permission so the app can send media keys (System Settings > Privacy & Security > Accessibility).
+
+macOS owns 4-finger swipes by default (Mission Control, spaces). Disable the conflicting gestures in System Settings > Trackpad, or both actions fire.
+
+Mappings persist to `~/Library/Application Support/TrackpadTweaks/bindings.json`.
+
+## Usage
+
+Run the app:
+```bash
 open TrackpadTweaks.app
 ```
 
-On first launch grant **Accessibility** so it can send media keys. Click the ⏯ menu-bar icon → Open Settings to remap.
+Click the ⏯ menu-bar icon to open Settings and remap the four swipes.
 
-Debug logging:
-
+With debug logging:
 ```bash
 TRACKPAD_TWEAKS_DEBUG=1 ./TrackpadTweaks.app/Contents/MacOS/TrackpadTweaks
 ```
 
-## Gesture conflicts
+## Views
 
-macOS owns all 4-finger swipes by default (Mission Control, spaces, App Exposé). If bound, **both** the system action and your media key fire — disable the conflicting gestures in **System Settings → Trackpad**.
-
-## Files
-
-- `Sources/CMultitouch/` — C header for private `MultitouchSupport.framework`
-- `Sources/TrackpadTweaks/GestureModels.swift` — 4-finger swipe model
-- `Sources/TrackpadTweaks/GestureRecognizer.swift` — swipe state machine
-- `Sources/TrackpadTweaks/MultitouchReader.swift` — device enumeration, sleep/wake restart
-- `Sources/TrackpadTweaks/MediaKeys.swift` — NX_SYSDEFINED media-key synthesis
-- `Sources/TrackpadTweaks/MediaActionStore.swift` — bindings + JSON persistence
-- `Sources/TrackpadTweaks/SettingsWindowController.swift` — AppKit settings UI
-- `Sources/TrackpadTweaks/AppDelegate.swift` + `main.swift` — menu-bar app
-
-## Limitations
-
-- Unsandboxed, ad-hoc signed — personal use, not App Store distributable.
-- Rebuilding may require re-granting Accessibility (macOS tracks bundle id + signature).
-- For stable Launch at Login, keep `TrackpadTweaks.app` in `/Applications`.
+<img src="https://count.getloli.com/get/@trackpad-tweaks?theme=rule34" />
