@@ -1,20 +1,12 @@
 import Foundation
 
-/// Action a gesture can trigger: a media key or a macOS system action.
-enum GestureAction: String, Codable, CaseIterable, Identifiable {
+/// The four media actions a gesture can trigger.
+enum MediaAction: String, Codable, CaseIterable {
     case none
     case playPause
     case next
     case previous
-    case volumeUp
-    case volumeDown
     case mute
-    case missionControl
-    case appWindows
-    case spaceLeft
-    case spaceRight
-
-    var id: String { rawValue }
 
     var label: String {
         switch self {
@@ -22,31 +14,7 @@ enum GestureAction: String, Codable, CaseIterable, Identifiable {
         case .playPause: return "Play / Pause"
         case .next: return "Next track"
         case .previous: return "Previous track"
-        case .volumeUp: return "Volume up"
-        case .volumeDown: return "Volume down"
         case .mute: return "Mute"
-        case .missionControl: return "Mission Control"
-        case .appWindows: return "App Windows"
-        case .spaceLeft: return "Desktop Left"
-        case .spaceRight: return "Desktop Right"
-        }
-    }
-
-    /// Fire the action. Media keys use the aux-control path, the Mission Control
-    /// palette uses key synthesis, and workspace switching goes through
-    /// OmniWM's IPC channel (it ignores synthetic hotkeys).
-    func perform() {
-        switch self {
-        case .none:
-            break
-        case .playPause, .next, .previous, .volumeUp, .volumeDown, .mute:
-            MediaKeys.send(self)
-        case .missionControl, .appWindows:
-            SystemShortcuts.send(self)
-        case .spaceLeft:
-            OmniWM.switchWorkspace(next: false)
-        case .spaceRight:
-            OmniWM.switchWorkspace(next: true)
         }
     }
 }
@@ -54,7 +22,7 @@ enum GestureAction: String, Codable, CaseIterable, Identifiable {
 /// Persists gesture → media-action bindings to
 /// `~/Library/Application Support/TrackpadTweaks/bindings.json`.
 final class MediaActionStore {
-    var bindings: [String: GestureAction] = [:]
+    var bindings: [String: MediaAction] = [:]
     var enabled: Bool = true
     var lastGesture: Gesture?
     var lastFired: Bool = false
@@ -62,18 +30,14 @@ final class MediaActionStore {
     /// Called on the main thread whenever state changes (for UI refresh).
     var onChange: (() -> Void)?
 
-    static let defaults: [String: GestureAction] = [
-        // Requested preset:
-        // 4-finger swipe down → play/pause, left/right → prev/next
-        Gesture.swipe(4, .down).id: .playPause,
-        Gesture.swipe(4, .left).id: .previous,
-        Gesture.swipe(4, .right).id: .next,
-        Gesture.swipe(4, .up).id: .mute,
-        Gesture.swipe(3, .down).id: .volumeDown,
-        Gesture.swipe(3, .up).id: .volumeUp,
-        Gesture.swipe(3, .left).id: .previous,
-        Gesture.swipe(3, .right).id: .next,
+    static let defaults: [String: MediaAction] = [
+        Gesture(direction: .down).id: .playPause,
+        Gesture(direction: .left).id: .previous,
+        Gesture(direction: .right).id: .next,
+        Gesture(direction: .up).id: .mute,
     ]
+
+    private static let supportedIDs = Set(Gesture.all.map(\.id))
 
     private var fileURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -81,7 +45,14 @@ final class MediaActionStore {
     }
 
     private struct Saved: Codable {
-        var bindings: [String: GestureAction]
+        var bindings: [String: MediaAction]
+        var enabled: Bool
+    }
+
+    /// Lenient shape for migrating files written by older versions that
+    /// contained actions which no longer exist (volume, system actions).
+    private struct LooseSaved: Codable {
+        var bindings: [String: String]
         var enabled: Bool
     }
 
@@ -89,11 +60,11 @@ final class MediaActionStore {
         load()
     }
 
-    func action(for gesture: Gesture) -> GestureAction {
+    func action(for gesture: Gesture) -> MediaAction {
         bindings[gesture.id] ?? .none
     }
 
-    func set(_ action: GestureAction, for gesture: Gesture) {
+    func set(_ action: MediaAction, for gesture: Gesture) {
         bindings[gesture.id] = action
         save()
         onChange?()
@@ -118,7 +89,7 @@ final class MediaActionStore {
             if action == .none {
                 self.lastFired = false
             } else {
-                action.perform()
+                MediaKeys.send(action)
                 self.lastFired = true
             }
             self.onChange?()
@@ -126,17 +97,20 @@ final class MediaActionStore {
     }
 
     private func load() {
-        do {
-            let data = try Data(contentsOf: fileURL)
-            let saved = try JSONDecoder().decode(Saved.self, from: data)
+        if let data = try? Data(contentsOf: fileURL),
+           let saved = try? JSONDecoder().decode(Saved.self, from: data) {
             bindings = saved.bindings
             enabled = saved.enabled
-        } catch {
+        } else if let data = try? Data(contentsOf: fileURL),
+                  let loose = try? JSONDecoder().decode(LooseSaved.self, from: data) {
+            bindings = loose.bindings.compactMapValues(MediaAction.init(rawValue:))
+            enabled = loose.enabled
+        } else {
             bindings = Self.defaults
             enabled = true
         }
-        // Drop bindings for gestures we no longer support (5-finger).
-        bindings = bindings.filter { !$0.key.hasPrefix("swipe-5") && !$0.key.hasPrefix("tap-5") }
+        // Drop bindings for gestures we no longer support.
+        bindings = bindings.filter { Self.supportedIDs.contains($0.key) }
         for (k, v) in Self.defaults where bindings[k] == nil {
             bindings[k] = v
         }

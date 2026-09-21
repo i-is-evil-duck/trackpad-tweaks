@@ -17,6 +17,9 @@ mkdir -p "${APP}/Contents/MacOS"
 cp "$BIN_PATH" "${APP}/Contents/MacOS/${BIN_NAME}"
 cp "${ROOT}/Resources/Info.plist" "${APP}/Contents/Info.plist"
 
+echo "[2b/3] Stripping symbols for size"
+strip -x "${APP}/Contents/MacOS/${BIN_NAME}"
+
 echo "[3/3] Codesigning"
 codesign --force --deep --sign - "$APP"
 codesign --verify --verbose "$APP" 2>&1 | sed 's/^/  /'

@@ -15,7 +15,7 @@ final class SettingsWindowController: NSWindowController {
     init(store: MediaActionStore) {
         self.store = store
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 440),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 340),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -72,14 +72,8 @@ final class SettingsWindowController: NSWindowController {
         enabledCheckbox.action = #selector(toggledEnabled(_:))
         stack.addArrangedSubview(enabledCheckbox)
 
-        for section in [(4, "4-finger (recommended)"), (3, "3-finger")] {
-            let header = NSTextField(labelWithString: section.1)
-            header.font = .boldSystemFont(ofSize: 12)
-            stack.addArrangedSubview(header)
-            for dir in SwipeDirection.allCases {
-                let gesture = Gesture.swipe(section.0, dir)
-                stack.addArrangedSubview(row(for: gesture))
-            }
+        for gesture in Gesture.all {
+            stack.addArrangedSubview(row(for: gesture))
         }
 
         statusLabel.font = .systemFont(ofSize: 11)
@@ -91,7 +85,7 @@ final class SettingsWindowController: NSWindowController {
         loginCheckbox.action = #selector(toggledLogin(_:))
         stack.addArrangedSubview(loginCheckbox)
 
-        let hint = NSTextField(wrappingLabelWithString: "If a swipe also triggers a macOS action (Mission Control, spaces), disable it in System Settings → Trackpad.")
+        let hint = NSTextField(wrappingLabelWithString: "4-finger swipes are also used by macOS (Mission Control, spaces). Disable them in System Settings → Trackpad or both actions fire.")
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .secondaryLabelColor
         stack.addArrangedSubview(hint)
@@ -102,12 +96,13 @@ final class SettingsWindowController: NSWindowController {
         row.orientation = .horizontal
         row.spacing = 8
 
-        let label = NSTextField(labelWithString: gestureLabel(for: gesture))
+        // All 4-finger swipes conflict with a macOS default gesture.
+        let label = NSTextField(labelWithString: gesture.displayName + "  ⚠︎")
         label.font = .systemFont(ofSize: 12)
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let popup = NSPopUpButton(frame: .zero, pullsDown: false)
-        popup.addItems(withTitles: GestureAction.allCases.map(\.label))
+        popup.addItems(withTitles: MediaAction.allCases.map(\.label))
         popup.target = self
         popup.action = #selector(changedPopup(_:))
         popup.identifier = NSUserInterfaceItemIdentifier(gesture.id)
@@ -118,12 +113,6 @@ final class SettingsWindowController: NSWindowController {
         row.addArrangedSubview(label)
         row.addArrangedSubview(popup)
         return row
-    }
-
-    private func gestureLabel(for gesture: Gesture) -> String {
-        var s = gesture.displayName
-        if gesture.conflictsWithSystemDefault { s += "  ⚠︎" }
-        return s
     }
 
     private func makeButton(title: String, action: @escaping () -> Void) -> NSButton {
@@ -137,12 +126,11 @@ final class SettingsWindowController: NSWindowController {
 
     @objc private func changedPopup(_ sender: NSPopUpButton) {
         guard let id = sender.identifier?.rawValue else { return }
-        let action = GestureAction.allCases[sender.indexOfSelectedItem]
-        let parts = id.split(separator: "-")
-        // id format: "swipe-<fingers>-<direction>"
-        guard parts.count == 3, let fingers = Int(parts[1]),
-              let dir = SwipeDirection(rawValue: String(parts[2])) else { return }
-        store.set(action, for: .swipe(fingers, dir))
+        let action = MediaAction.allCases[sender.indexOfSelectedItem]
+        // id format: "swipe-4-<direction>"
+        let direction = id.split(separator: "-").last.flatMap { SwipeDirection(rawValue: String($0)) }
+        guard let direction else { return }
+        store.set(action, for: Gesture(direction: direction))
     }
 
     @objc private func toggledEnabled(_ sender: NSButton) {
@@ -157,7 +145,7 @@ final class SettingsWindowController: NSWindowController {
         enabledCheckbox.state = store.enabled ? .on : .off
         for (id, popup) in popups {
             let action = store.bindings[id] ?? .none
-            if let idx = GestureAction.allCases.firstIndex(of: action) {
+            if let idx = MediaAction.allCases.firstIndex(of: action) {
                 popup.selectItem(at: idx)
             }
         }
