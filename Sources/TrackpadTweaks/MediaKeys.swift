@@ -14,20 +14,20 @@ enum MediaKeys {
     private static let NX_KEYTYPE_FAST: Int32 = 19
     private static let NX_KEYTYPE_REWIND: Int32 = 20
 
-    static func send(_ action: MediaAction) {
+    static func send(_ action: GestureAction) {
         guard let key = nxKey(for: action) else { return }
         postAuxKey(key)
     }
 
-    private static func nxKey(for action: MediaAction) -> Int32? {
+    private static func nxKey(for action: GestureAction) -> Int32? {
         switch action {
-        case .none: return nil
         case .playPause: return NX_KEYTYPE_PLAY
         case .next: return NX_KEYTYPE_NEXT
         case .previous: return NX_KEYTYPE_PREVIOUS
         case .volumeUp: return NX_KEYTYPE_SOUND_UP
         case .volumeDown: return NX_KEYTYPE_SOUND_DOWN
         case .mute: return NX_KEYTYPE_MUTE
+        default: return nil // .none + system actions handled by SystemShortcuts
         }
     }
 

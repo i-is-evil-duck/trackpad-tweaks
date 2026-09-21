@@ -1,7 +1,7 @@
 import Foundation
 
-/// Media action a gesture can trigger.
-enum MediaAction: String, Codable, CaseIterable, Identifiable {
+/// Action a gesture can trigger: a media key or a macOS system action.
+enum GestureAction: String, Codable, CaseIterable, Identifiable {
     case none
     case playPause
     case next
@@ -9,6 +9,10 @@ enum MediaAction: String, Codable, CaseIterable, Identifiable {
     case volumeUp
     case volumeDown
     case mute
+    case missionControl
+    case appWindows
+    case spaceLeft
+    case spaceRight
 
     var id: String { rawValue }
 
@@ -21,6 +25,23 @@ enum MediaAction: String, Codable, CaseIterable, Identifiable {
         case .volumeUp: return "Volume up"
         case .volumeDown: return "Volume down"
         case .mute: return "Mute"
+        case .missionControl: return "Mission Control"
+        case .appWindows: return "App Windows"
+        case .spaceLeft: return "Desktop Left"
+        case .spaceRight: return "Desktop Right"
+        }
+    }
+
+    /// Fire the action. Media keys use the aux-control path,
+    /// system actions use their default keyboard shortcuts.
+    func perform() {
+        switch self {
+        case .none:
+            break
+        case .playPause, .next, .previous, .volumeUp, .volumeDown, .mute:
+            MediaKeys.send(self)
+        case .missionControl, .appWindows, .spaceLeft, .spaceRight:
+            SystemShortcuts.send(self)
         }
     }
 }
@@ -28,7 +49,7 @@ enum MediaAction: String, Codable, CaseIterable, Identifiable {
 /// Persists gesture → media-action bindings to
 /// `~/Library/Application Support/TrackpadTweaks/bindings.json`.
 final class MediaActionStore {
-    var bindings: [String: MediaAction] = [:]
+    var bindings: [String: GestureAction] = [:]
     var enabled: Bool = true
     var lastGesture: Gesture?
     var lastFired: Bool = false
@@ -36,7 +57,7 @@ final class MediaActionStore {
     /// Called on the main thread whenever state changes (for UI refresh).
     var onChange: (() -> Void)?
 
-    static let defaults: [String: MediaAction] = [
+    static let defaults: [String: GestureAction] = [
         // Requested preset:
         // 4-finger swipe down → play/pause, left/right → prev/next
         Gesture.swipe(4, .down).id: .playPause,
@@ -55,7 +76,7 @@ final class MediaActionStore {
     }
 
     private struct Saved: Codable {
-        var bindings: [String: MediaAction]
+        var bindings: [String: GestureAction]
         var enabled: Bool
     }
 
@@ -63,11 +84,11 @@ final class MediaActionStore {
         load()
     }
 
-    func action(for gesture: Gesture) -> MediaAction {
+    func action(for gesture: Gesture) -> GestureAction {
         bindings[gesture.id] ?? .none
     }
 
-    func set(_ action: MediaAction, for gesture: Gesture) {
+    func set(_ action: GestureAction, for gesture: Gesture) {
         bindings[gesture.id] = action
         save()
         onChange?()
@@ -92,7 +113,7 @@ final class MediaActionStore {
             if action == .none {
                 self.lastFired = false
             } else {
-                MediaKeys.send(action)
+                action.perform()
                 self.lastFired = true
             }
             self.onChange?()

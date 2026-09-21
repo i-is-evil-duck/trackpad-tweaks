@@ -2,11 +2,15 @@
 
 Lightweight macOS menu-bar app that remaps trackpad gestures to media controls.
 
-Default preset (what you asked for):
+Default preset:
 - **4-finger swipe down → Play / Pause**
 - **4-finger swipe left → Previous track**
 - **4-finger swipe right → Next track**
 - 4-finger up → Mute, 3-finger up/down → Volume up/down, 3-finger left/right → Prev/Next
+
+Also available per gesture: **Mission Control**, **App Windows**, **Desktop Left**, **Desktop Right** (sent as the default `^↑ ^↓ ^← ^→` shortcuts — if you've remapped those in System Settings → Keyboard → Shortcuts, update `SystemShortcuts.swift` to match).
+
+> ⚠️ Mapping a gesture to Desktop Left/Right duplicates the macOS default for 3/4-finger horizontal swipes. Disable "Swipe between full-screen applications" in System Settings → Trackpad first, or both actions fire and the desktop appears not to move.
 
 All mappings are editable in the Settings window.
 
@@ -46,6 +50,7 @@ macOS owns 3- and 4-finger swipes by default (Mission Control, spaces, App Expos
 - `Sources/TrackpadTweaks/GestureRecognizer.swift` — swipe/tap state machine
 - `Sources/TrackpadTweaks/MultitouchReader.swift` — device enumeration, sleep/wake restart
 - `Sources/TrackpadTweaks/MediaKeys.swift` — NX_SYSDEFINED media-key synthesis
+- `Sources/TrackpadTweaks/SystemShortcuts.swift` — system actions via default key combos (^↑ ^↓ ^← ^→)
 - `Sources/TrackpadTweaks/MediaActionStore.swift` — bindings + JSON persistence
 - `Sources/TrackpadTweaks/SettingsWindowController.swift` — AppKit settings UI
 - `Sources/TrackpadTweaks/AppDelegate.swift` + `main.swift` — menu-bar app

@@ -95,14 +95,6 @@ final class SettingsWindowController: NSWindowController {
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .secondaryLabelColor
         stack.addArrangedSubview(hint)
-
-        let tests = NSStackView(views: [
-            makeButton(title: "Test Play/Pause") { MediaKeys.send(.playPause) },
-            makeButton(title: "Test Next") { MediaKeys.send(.next) },
-            makeButton(title: "Test Prev") { MediaKeys.send(.previous) },
-        ])
-        tests.orientation = .horizontal
-        stack.addArrangedSubview(tests)
     }
 
     private func row(for gesture: Gesture) -> NSView {
@@ -115,7 +107,7 @@ final class SettingsWindowController: NSWindowController {
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let popup = NSPopUpButton(frame: .zero, pullsDown: false)
-        popup.addItems(withTitles: MediaAction.allCases.map(\.label))
+        popup.addItems(withTitles: GestureAction.allCases.map(\.label))
         popup.target = self
         popup.action = #selector(changedPopup(_:))
         popup.identifier = NSUserInterfaceItemIdentifier(gesture.id)
@@ -145,7 +137,7 @@ final class SettingsWindowController: NSWindowController {
 
     @objc private func changedPopup(_ sender: NSPopUpButton) {
         guard let id = sender.identifier?.rawValue else { return }
-        let action = MediaAction.allCases[sender.indexOfSelectedItem]
+        let action = GestureAction.allCases[sender.indexOfSelectedItem]
         let parts = id.split(separator: "-")
         // id format: "swipe-<fingers>-<direction>"
         guard parts.count == 3, let fingers = Int(parts[1]),
@@ -165,7 +157,7 @@ final class SettingsWindowController: NSWindowController {
         enabledCheckbox.state = store.enabled ? .on : .off
         for (id, popup) in popups {
             let action = store.bindings[id] ?? .none
-            if let idx = MediaAction.allCases.firstIndex(of: action) {
+            if let idx = GestureAction.allCases.firstIndex(of: action) {
                 popup.selectItem(at: idx)
             }
         }
