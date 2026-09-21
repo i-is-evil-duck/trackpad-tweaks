@@ -6,14 +6,13 @@ private func sdbg(_ s: @autoclosure () -> String) {
     if SystemShortcutsDebug { FileHandle.standardError.write(Data("[tweaks] \(s())\n".utf8)) }
 }
 
-/// Triggers window-manager actions by posting keyboard shortcuts.
+/// Triggers system actions by posting keyboard shortcuts.
 /// Requires Accessibility permission (already needed for media keys).
 ///
-/// Currently wired for OmniWM's bindings (see `combo(for:)`).
-/// IMPORTANT: the target actions must actually be bound in
-/// OmniWM Settings → Hotkeys — e.g. "Switch to Next/Previous Workspace"
-/// are Unassigned by default, and sending an unbound chord just beeps.
-/// If you change those bindings, update the combos below to match.
+/// NOTE: workspace switching intentionally does NOT live here — OmniWM ignores
+/// synthetic hotkeys, so Desktop Left/Right go through `OmniWM.switchWorkspace`
+/// (omniwmctl IPC) instead. See `combo(for:)` for the remaining bindings; if you
+/// change those, update the combos to match.
 enum SystemShortcuts {
     static func send(_ action: GestureAction) {
         guard let (keyCode, flags) = combo(for: action) else { return }
@@ -22,13 +21,10 @@ enum SystemShortcuts {
     }
 
     private static func combo(for action: GestureAction) -> (CGKeyCode, CGEventFlags)? {
-        let ctrlOpt: CGEventFlags = [.maskControl, .maskAlternate]
         switch action {
-        case .missionControl: return (49, ctrlOpt)  // ^⌥Space
+        case .missionControl: return (49, [.maskControl, .maskAlternate]) // ^⌥Space
         case .appWindows: return (125, .maskControl) // ^Down Arrow (macOS default)
-        case .spaceLeft: return (123, ctrlOpt)       // ^⌥Left Arrow
-        case .spaceRight: return (124, ctrlOpt)      // ^⌥Right Arrow
-        default: return nil
+        default: return nil // workspace switching uses OmniWM IPC, not keys
         }
     }
 

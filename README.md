@@ -8,9 +8,9 @@ Default preset:
 - **4-finger swipe right → Next track**
 - 4-finger up → Mute, 3-finger up/down → Volume up/down, 3-finger left/right → Prev/Next
 
-Also available per gesture: **Mission Control** (`^⌥Space`, OmniWM command palette), **App Windows** (`^↓`), **Desktop Left** (`^⌥←`), **Desktop Right** (`^⌥→`).
+Also available per gesture: **Mission Control** (`^⌥Space`, OmniWM command palette), **App Windows** (`^↓`), **Desktop Left/Right** (OmniWM `switch-workspace prev/next` over IPC — immune to the beep problem below).
 
-> ⚠️ OmniWM leaves "Switch to Next/Previous Workspace" **Unassigned** by default. Bind them (to `^⌥←`/`^⌥→` or whatever you like) in OmniWM Settings → Hotkeys first, then make `combo(for:)` in `SystemShortcuts.swift` send the same chords. An unbound chord matches nothing and the frontmost app just beeps.
+> ⚠️ **Desktop Left/Right need OmniWM's IPC server on.** If gestures do nothing and the debug log shows `omniwmctl exit=...`, enable IPC in OmniWM Settings, then retry. (Background: OmniWM ignores *synthesized* hotkeys — a sent `^⌥←` falls through to the focused app, which is the "pong" beep. `omniwmctl` talks to OmniWM directly, so it always works once IPC is on. Your physical keyboard is unaffected either way.)
 
 > ⚠️ Mapping a gesture to Desktop Left/Right duplicates the macOS default for 3/4-finger horizontal swipes. Disable "Swipe between full-screen applications" in System Settings → Trackpad first, or both actions fire and the desktop appears not to move.
 

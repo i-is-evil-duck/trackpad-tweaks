@@ -32,16 +32,21 @@ enum GestureAction: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Fire the action. Media keys use the aux-control path,
-    /// system actions use their default keyboard shortcuts.
+    /// Fire the action. Media keys use the aux-control path, the Mission Control
+    /// palette uses key synthesis, and workspace switching goes through
+    /// OmniWM's IPC channel (it ignores synthetic hotkeys).
     func perform() {
         switch self {
         case .none:
             break
         case .playPause, .next, .previous, .volumeUp, .volumeDown, .mute:
             MediaKeys.send(self)
-        case .missionControl, .appWindows, .spaceLeft, .spaceRight:
+        case .missionControl, .appWindows:
             SystemShortcuts.send(self)
+        case .spaceLeft:
+            OmniWM.switchWorkspace(next: false)
+        case .spaceRight:
+            OmniWM.switchWorkspace(next: true)
         }
     }
 }
